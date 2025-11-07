@@ -7,6 +7,9 @@ pub enum ClientError {
     #[error("Reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
 
+    #[error("Validation Error: {0}")]
+    ValidationError(String),
+
     #[error("Unauthorized Error")]
     UnauthorizedError,
 
@@ -21,6 +24,7 @@ impl From<ErrorResponse> for ClientError {
     fn from(res: ErrorResponse) -> Self {
         match res.get_code().to_lowercase().as_str() {
             "unauthorized" => ClientError::UnauthorizedError,
+            "validation_error" => ClientError::ValidationError(res.get_message().to_string()),
             _ => ClientError::InternalError(res.get_message().to_string()),
         }
     }

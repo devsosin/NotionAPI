@@ -4,6 +4,13 @@ use crate::errors::ClientError;
 
 pub type ClientResult<T> = Result<T, ClientError>;
 
+pub enum Method {
+    Get,
+    Post,
+    Patch,
+    Delete,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct ErrorResponse {
     status: u16,
