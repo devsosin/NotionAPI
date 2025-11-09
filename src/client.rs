@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     NotionAPI,
-    types::{ClientResult, ErrorResponse, Method},
+    types::{ClientResult, ErrorResponse, Method, NotionResponse},
 };
 
 impl NotionAPI {
@@ -42,7 +42,7 @@ impl NotionAPI {
         endpoint: &str,
         method: Method,
         body: T,
-    ) -> ClientResult<U> {
+    ) -> ClientResult<NotionResponse<U>> {
         let url = format!("{}/{}", &self.base_url, endpoint);
 
         let builder = match method {
@@ -56,12 +56,13 @@ impl NotionAPI {
 
         if res.status().is_success() == false {
             let err_response = res.json::<ErrorResponse>().await.unwrap();
+            // TODO? log.error
             println!("{:?}", err_response);
             let err = err_response.into();
             return Err(err);
         }
 
-        let res_body = res.json::<U>().await.unwrap();
+        let res_body = res.json::<NotionResponse<U>>().await.unwrap();
         Ok(res_body)
     }
 }

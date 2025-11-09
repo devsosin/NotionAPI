@@ -5,7 +5,9 @@ pub mod errors;
 pub mod types;
 
 // apis
-pub mod datasource;
+pub mod data_source;
+pub mod database;
+pub mod page;
 
 pub struct NotionAPI {
     client: Client,
