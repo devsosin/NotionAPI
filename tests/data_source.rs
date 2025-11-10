@@ -1,19 +1,8 @@
 #[cfg(test)]
 mod test {
     use dotenv::dotenv;
-    use notion::{NotionAPI, data_source::DataSourceClient, database::DatabaseClient};
+    use notion::{NotionAPI, data_source::DataSourceClient};
     use serde_json::json;
-
-    #[tokio::test]
-    async fn test_get_db() {
-        dotenv();
-
-        let api = NotionAPI::from_env();
-
-        let result = api.get_database("{database_id}").await.unwrap();
-
-        println!("{:?}", result);
-    }
 
     #[tokio::test]
     async fn test_get_ds() {
@@ -41,13 +30,13 @@ mod test {
                         "date": {
                             // "equals": "2025-11-07T00:00:00+09:00"
                             // "this_week": {}
-                            "after": "2025-11-07T00:00:00+09:00"
+                            "after": "2025-11-11T00:00:00+09:00"
                         }
                     },
                     {
                         "property": "날짜",
                         "date": {
-                            "before": "2025-11-08T00:00:00+09:00"
+                            "before": "2025-11-12T00:00:00+09:00"
                         }
                     }
                 ]}),

@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::errors::ClientError;
@@ -37,15 +37,15 @@ pub struct NotionResponse<T> {
     data: Option<T>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Cover {
-    #[serde(rename(deserialize = "type"))]
+    #[serde(rename(deserialize = "type", serialize = "type"))]
     cover_type: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Icon {
-    #[serde(rename(deserialize = "type"))]
+    #[serde(rename(deserialize = "type", serialize = "type"))]
     icon_type: String,
     emoji: Option<String>,
 }
