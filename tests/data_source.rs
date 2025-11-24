@@ -24,6 +24,7 @@ mod test {
         let result = api
             .query_pages(
                 "{data_source_id}",
+                vec!["title"],
                 json!({"and": [
                     {
                         "property": "날짜",

@@ -13,6 +13,18 @@ impl QueryBody {
     }
 }
 
+pub struct PropertyFilters;
+
+impl PropertyFilters {
+    pub fn as_query(values: Vec<&str>) -> String {
+        values
+            .iter()
+            .map(|v| format!("filter_properties[]={}", v))
+            .collect::<Vec<String>>()
+            .join("&")
+    }
+}
+
 #[derive(Serialize)]
 pub struct Sort {
     property: String,

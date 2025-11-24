@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use crate::{
     NotionAPI,
     data_source::dto::{
-        request::QueryBody,
+        request::{PropertyFilters, QueryBody},
         response::{GetDataSourceResponse, QueryPageListResponse},
     },
     types::{ClientResult, Method, NotionResponse},
@@ -22,6 +22,7 @@ pub trait DataSourceClient: Send + Sync {
     fn query_pages(
         &self,
         data_source_id: &str,
+        properties: Vec<&str>,
         filters: Value,
         sorts: Vec<(&str, &str)>,
     ) -> impl Future<Output = ClientResult<NotionResponse<QueryPageListResponse>>>;
@@ -46,10 +47,15 @@ impl DataSourceClient for NotionAPI {
     async fn query_pages(
         &self,
         data_source_id: &str,
+        properties: Vec<&str>,
         filters: Value,
         sorts: Vec<(&str, &str)>,
     ) -> ClientResult<NotionResponse<QueryPageListResponse>> {
-        let endpoint = format!("data_sources/{}/query", data_source_id);
+        let endpoint = format!(
+            "data_sources/{}/query?{}",
+            data_source_id,
+            PropertyFilters::as_query(properties)
+        );
 
         let body = QueryBody::new(filters, sorts.iter().map(|s| s.into()).collect());
 
