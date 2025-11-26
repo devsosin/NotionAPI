@@ -14,11 +14,12 @@ mod test {
         let properties = json!({
             "날짜": {
                 "date": {
-                    "start": "2025-11-11T20:00:00+09:00",
-                    "end": "2025-11-11T22:00:00+09:00",
+                    "start": "2025-11-27",
+                    // "end": "2025-11-11T22:00:00+09:00",
                 }
             }
         });
+        // vec (property name, property type, value)
 
         let result = api.update_page(page_id, properties).await.unwrap();
 

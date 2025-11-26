@@ -36,6 +36,34 @@ pub struct QueryPageListResponse {
     results: Vec<Page>,
 }
 
+pub struct PageInfo {
+    id: String,
+    properties: Vec<Property>,
+}
+
+impl PageInfo {
+    pub fn get_id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn get_properties(&self) -> &Vec<Property> {
+        &self.properties
+    }
+}
+
+impl QueryPageListResponse {
+    // TODO: format Page {id, properties}
+    pub fn get_pages(&self) -> Vec<PageInfo> {
+        self.results
+            .iter()
+            .map(|p| PageInfo {
+                id: p.get_id().into(),
+                properties: p.get_properties(),
+            })
+            .collect::<Vec<PageInfo>>()
+    }
+}
+
 // TODO: macro_rules?
 impl GetDataSourceResponse {
     pub fn get_properties(&self) -> Vec<Property> {

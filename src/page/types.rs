@@ -31,6 +31,10 @@ pub struct Page {
 
 // TODO: macro_rules?
 impl Page {
+    pub fn get_id(&self) -> &str {
+        &self.id
+    }
+
     pub fn get_properties(&self) -> Vec<Property> {
         self.properties
             .as_object()

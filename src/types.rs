@@ -13,6 +13,20 @@ pub enum Method {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct NotionResponse<T> {
+    object: String,
+    request_id: String,
+    #[serde(flatten)]
+    data: Option<T>,
+}
+
+impl<T> NotionResponse<T> {
+    pub fn get_data(&self) -> &T {
+        self.data.as_ref().unwrap()
+    }
+}
+
+#[derive(Deserialize, Debug)]
 pub struct ErrorResponse {
     status: u16,
     code: String,
@@ -27,14 +41,6 @@ impl ErrorResponse {
     pub fn get_message(&self) -> &str {
         &self.message
     }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct NotionResponse<T> {
-    object: String,
-    request_id: String,
-    #[serde(flatten)]
-    data: Option<T>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -84,21 +90,72 @@ pub struct EditorInfo {
 
 pub struct Property {
     id: String,
-    name: String,
-    property_type: String,
-    value: Value,
+    // name: String,
+    property_type: PropertyType,
+    value: String,
     // types: people, checkbox, number, rich_text, date, relation, rollup, multi_select, files, select, title
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PropertyType {
+    Title,
+    Select,
+    MultiSelect,
+    Date,
+}
+
+impl From<&str> for PropertyType {
+    fn from(s: &str) -> Self {
+        match s {
+            "title" => Self::Title,
+            "select" => Self::Select,
+            "multi_select" => Self::MultiSelect,
+            "date" => Self::Date,
+            _ => Self::Title,
+        }
+    }
+}
+
+// multi select 객체는 select를 array로 감쌈 (color, id, name)
+impl PropertyType {
+    pub fn get_value(&self, v: &Value) -> String {
+        match self {
+            PropertyType::Title => v.as_array().unwrap().first().unwrap()["plain_text"]
+                .as_str()
+                .unwrap()
+                .into(),
+            PropertyType::Select => v["name"].as_str().unwrap().into(),
+            PropertyType::MultiSelect => v
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|item| item["name"].as_str().unwrap())
+                .collect::<Vec<&str>>()
+                .join("|"),
+            PropertyType::Date => todo!(),
+        }
+    }
 }
 
 impl From<&Value> for Property {
     fn from(value: &Value) -> Self {
-        let type_value = value.get("type").unwrap().to_string();
+        let type_str = value.get("type").unwrap().as_str().unwrap();
+        let property_type: PropertyType = type_str.into();
+        // println!("{:?}", value);
+        // println!("{:?}", type_value);
 
         Property {
             id: value.get("id").unwrap().to_string(),
-            name: value.get("name").unwrap().to_string(),
-            value: value.get(type_value.clone()).unwrap().to_owned(),
-            property_type: type_value,
+            // name: value.get("name").unwrap(),
+            value: property_type.get_value(value.get(type_str).unwrap()),
+            property_type: property_type,
         }
+    }
+}
+
+impl Property {
+    pub fn get_value(&self) -> &str {
+        &self.value
     }
 }
