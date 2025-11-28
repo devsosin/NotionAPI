@@ -71,7 +71,7 @@ impl GetDataSourceResponse {
             .as_object()
             .unwrap()
             .iter()
-            .map(|(_, v)| v.into())
+            .map(|(_, v)| Property::get_property_from_data_source(v))
             .collect::<Vec<Property>>()
     }
 }

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::errors::ClientError;
 
@@ -90,32 +90,146 @@ pub struct EditorInfo {
 
 pub struct Property {
     id: String,
-    // name: String,
+    name: String,
     property_type: PropertyType,
     value: String,
-    // types: people, checkbox, number, rich_text, date, relation, rollup, multi_select, files, select, title
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PropertyType {
-    Title,
-    Select,
-    MultiSelect,
-    Date,
-}
+impl Property {
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
 
-impl From<&str> for PropertyType {
-    fn from(s: &str) -> Self {
-        match s {
-            "title" => Self::Title,
-            "select" => Self::Select,
-            "multi_select" => Self::MultiSelect,
-            "date" => Self::Date,
-            _ => Self::Title,
+    pub fn get_property_type(&self) -> &PropertyType {
+        &self.property_type
+    }
+
+    pub fn get_value(&self) -> &str {
+        &self.value
+    }
+
+    pub fn get_property_from_data_source(value: &Value) -> Self {
+        let type_str = value.get("type").unwrap().as_str().unwrap();
+        let property_type: PropertyType = type_str.try_into().unwrap();
+
+        Property {
+            id: value.get("id").unwrap().to_string(),
+            name: value.get("name").unwrap().as_str().unwrap().into(),
+            value: "".to_string(),
+            property_type,
         }
     }
 }
+
+impl From<&Value> for Property {
+    fn from(value: &Value) -> Self {
+        let type_str = value.get("type").unwrap().as_str().unwrap();
+        let property_type: PropertyType = type_str.try_into().unwrap();
+
+        Property {
+            id: value.get("id").unwrap().to_string(),
+            name: value
+                .get("name")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .unwrap()
+                .into(),
+            value: property_type.get_value(value.get(type_str).unwrap()),
+            property_type,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum PropertyType {
+    Title,
+    Date,
+    Checkbox,
+    Files,
+    Formula,
+    MultiSelect,
+    Number,
+    People,
+    PhoneNumber,
+    Relation,
+    RichText,
+    Select,
+    Status,
+    Timestamp,
+    Verification,
+    Place,
+    Url,
+    Rollup,
+
+    ID,
+    CreatedTime,
+    LastEditedTime,
+}
+
+impl Into<&str> for &PropertyType {
+    fn into(self) -> &'static str {
+        match self {
+            PropertyType::Title => "title",
+            PropertyType::Date => "date",
+            PropertyType::Checkbox => "checkbox",
+            PropertyType::Files => "files",
+            PropertyType::ID => "id",
+            PropertyType::MultiSelect => "multi_select",
+            PropertyType::Number => "number",
+            PropertyType::People => "people",
+            PropertyType::PhoneNumber => "phone_number",
+            PropertyType::Relation => "relation",
+            PropertyType::RichText => "rich_text",
+            PropertyType::Select => "select",
+            PropertyType::Status => "status",
+            PropertyType::Timestamp => "timestamp",
+            PropertyType::Verification => "verification",
+            PropertyType::Place => "place",
+            PropertyType::Url => "url",
+            PropertyType::Formula => "formula",
+            PropertyType::Rollup => "rollup",
+            PropertyType::CreatedTime => "created_time",
+            PropertyType::LastEditedTime => "last_edited_time",
+        }
+    }
+}
+
+impl TryFrom<&str> for PropertyType {
+    type Error = ClientError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let property_type = match s {
+            "title" => PropertyType::Title,
+            "date" => PropertyType::Date,
+            "checkbox" => PropertyType::Checkbox,
+            "files" => PropertyType::Files,
+            "id" => PropertyType::ID,
+            "multi_select" => PropertyType::MultiSelect,
+            "number" => PropertyType::Number,
+            "people" => PropertyType::People,
+            "phone_number" => PropertyType::PhoneNumber,
+            "relation" => PropertyType::Relation,
+            "rich_text" => PropertyType::RichText,
+            "select" => PropertyType::Select,
+            "status" => PropertyType::Status,
+            "timestamp" => PropertyType::Timestamp,
+            "verification" => PropertyType::Verification,
+            "place" => PropertyType::Place,
+            "url" => PropertyType::Url,
+            "formula" => PropertyType::Formula,
+            "rollup" => PropertyType::Rollup,
+            "created_time" => PropertyType::CreatedTime,
+            "last_edited_time" => PropertyType::LastEditedTime,
+            _ => return Err(ClientError::ValidationError("Notion Property Type".into())),
+        };
+
+        Ok(property_type)
+    }
+}
+
+// DataSource에서 가져올 땐 property 설명
+// Page에서 가져올 땐 property 값이 들어가있음
 
 // multi select 객체는 select를 array로 감쌈 (color, id, name)
 impl PropertyType {
@@ -133,29 +247,11 @@ impl PropertyType {
                 .map(|item| item["name"].as_str().unwrap())
                 .collect::<Vec<&str>>()
                 .join("|"),
-            PropertyType::Date => todo!(),
+            // PropertyType::Date => todo!(),
+            _ => {
+                println!("Value: {:?}", v);
+                "".to_string()
+            }
         }
-    }
-}
-
-impl From<&Value> for Property {
-    fn from(value: &Value) -> Self {
-        let type_str = value.get("type").unwrap().as_str().unwrap();
-        let property_type: PropertyType = type_str.into();
-        // println!("{:?}", value);
-        // println!("{:?}", type_value);
-
-        Property {
-            id: value.get("id").unwrap().to_string(),
-            // name: value.get("name").unwrap(),
-            value: property_type.get_value(value.get(type_str).unwrap()),
-            property_type: property_type,
-        }
-    }
-}
-
-impl Property {
-    pub fn get_value(&self) -> &str {
-        &self.value
     }
 }
