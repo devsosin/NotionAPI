@@ -88,6 +88,7 @@ pub struct EditorInfo {
     object: String,
 }
 
+#[derive(Debug)]
 pub struct Property {
     id: String,
     name: String,
@@ -247,9 +248,18 @@ impl PropertyType {
                 .map(|item| item["name"].as_str().unwrap())
                 .collect::<Vec<&str>>()
                 .join("|"),
-            // PropertyType::Date => todo!(),
+            PropertyType::Date => {
+                let start = v["start"].as_str().unwrap();
+                let end = match v["end"].as_str() {
+                    Some(end) => "~".to_string() + end,
+                    None => "".into(),
+                };
+
+                format!("{}{}", start, end)
+            }
+            PropertyType::Checkbox => v.as_bool().unwrap().to_string(),
             _ => {
-                println!("Value: {:?}", v);
+                println!("Check Property Type, Value: {:?}, {:?}", self, v);
                 "".to_string()
             }
         }
