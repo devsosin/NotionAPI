@@ -141,7 +141,7 @@ impl From<&Value> for Property {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PropertyType {
     Title,
@@ -258,6 +258,7 @@ impl PropertyType {
                 format!("{}{}", start, end)
             }
             PropertyType::Checkbox => v.as_bool().unwrap().to_string(),
+            PropertyType::Status => v["name"].as_str().unwrap().into(),
             _ => {
                 println!("Check Property Type, Value: {:?}, {:?}", self, v);
                 "".to_string()
