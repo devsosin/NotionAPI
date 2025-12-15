@@ -15,8 +15,8 @@ pub struct Property {
     property_info: PropertyInfo,
 }
 
-impl Property {
-    pub fn new(value: &Value) -> Self {
+impl From<&Value> for Property {
+    fn from(value: &Value) -> Self {
         let property_info: PropertyInfo = value.into();
 
         Property {
@@ -26,7 +26,9 @@ impl Property {
             property_info,
         }
     }
+}
 
+impl Property {
     pub fn get_name(&self) -> &str {
         &self.name
     }

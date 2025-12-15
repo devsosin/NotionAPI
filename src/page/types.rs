@@ -39,7 +39,7 @@ impl Page {
             .as_object()
             .unwrap()
             .iter()
-            .map(|(_, v)| v.into())
+            .map(|(n, v)| Property::new(n, v))
             .collect::<Vec<Property>>()
     }
 }

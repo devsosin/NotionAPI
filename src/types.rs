@@ -97,19 +97,17 @@ pub struct Property {
     property_value: PropertyValue,
 }
 
-impl From<&Value> for Property {
-    fn from(value: &Value) -> Self {
+impl Property {
+    pub fn new(name: &str, value: &Value) -> Self {
         let property_value: PropertyValue = value.into();
 
         Property {
             id: value.get("id").unwrap().to_string(),
-            name: value.get("name").unwrap().as_str().unwrap().into(),
+            name: name.into(),
             property_value,
         }
     }
-}
 
-impl Property {
     pub fn get_name(&self) -> &str {
         &self.name
     }
@@ -121,7 +119,6 @@ impl Property {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-
 pub enum PropertyValue {
     ID,
     Verification,
@@ -183,8 +180,6 @@ impl From<&Value> for PropertyValue {
     fn from(value: &Value) -> Self {
         let type_str = value.get("type").unwrap().as_str().unwrap();
         let value = value.get(type_str).unwrap();
-
-        println!("Notion property value: {}", value);
 
         match type_str {
             "title" => {

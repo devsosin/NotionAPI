@@ -35,7 +35,7 @@ impl GetDataSourceResponse {
             .as_object()
             .unwrap()
             .iter()
-            .map(|(_, v)| Property::new(v))
+            .map(|(_, v)| v.into())
             .collect::<Vec<Property>>()
     }
 }
