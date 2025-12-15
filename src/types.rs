@@ -1,5 +1,7 @@
+use std::mem::discriminant;
+
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::errors::ClientError;
 
@@ -92,8 +94,19 @@ pub struct EditorInfo {
 pub struct Property {
     id: String,
     name: String,
-    property_type: PropertyType,
-    value: String,
+    property_value: PropertyValue,
+}
+
+impl From<&Value> for Property {
+    fn from(value: &Value) -> Self {
+        let property_value: PropertyValue = value.into();
+
+        Property {
+            id: value.get("id").unwrap().to_string(),
+            name: value.get("name").unwrap().as_str().unwrap().into(),
+            property_value,
+        }
+    }
 }
 
 impl Property {
@@ -101,168 +114,153 @@ impl Property {
         &self.name
     }
 
-    pub fn get_property_type(&self) -> &PropertyType {
-        &self.property_type
-    }
-
-    pub fn get_value(&self) -> &str {
-        &self.value
-    }
-
-    pub fn get_property_from_data_source(value: &Value) -> Self {
-        let type_str = value.get("type").unwrap().as_str().unwrap();
-        let property_type: PropertyType = type_str.try_into().unwrap();
-
-        Property {
-            id: value.get("id").unwrap().to_string(),
-            name: value.get("name").unwrap().as_str().unwrap().into(),
-            value: "".to_string(),
-            property_type,
-        }
-    }
-}
-
-impl From<&Value> for Property {
-    fn from(value: &Value) -> Self {
-        let type_str = value.get("type").unwrap().as_str().unwrap();
-        let property_type: PropertyType = type_str.try_into().unwrap();
-
-        Property {
-            id: value.get("id").unwrap().to_string(),
-            name: value
-                .get("name")
-                .unwrap_or(&json!(""))
-                .as_str()
-                .unwrap()
-                .into(),
-            value: property_type.get_value(value.get(type_str).unwrap()),
-            property_type,
-        }
+    pub fn get_property_value(&self) -> &PropertyValue {
+        &self.property_value
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum PropertyType {
-    Title,
-    Date,
-    Checkbox,
-    Files,
-    Formula,
-    MultiSelect,
+
+pub enum PropertyValue {
+    ID,
+    Verification,
+    Title(String),
+    RichText,
+
     Number,
+    Checkbox(bool),
+    Date(String, Option<String>),
+    Timestamp,
+
+    Status(String),
+    Select(String),
+    MultiSelect(Vec<String>),
+
+    Url,
+    Place,
     People,
     PhoneNumber,
+    Files,
+
+    Formula(String),
     Relation,
-    RichText,
-    Select,
-    Status,
-    Timestamp,
-    Verification,
-    Place,
-    Url,
     Rollup,
 
-    ID,
     CreatedTime,
     LastEditedTime,
 }
 
-impl Into<&str> for &PropertyType {
-    fn into(self) -> &'static str {
-        match self {
-            PropertyType::Title => "title",
-            PropertyType::Date => "date",
-            PropertyType::Checkbox => "checkbox",
-            PropertyType::Files => "files",
-            PropertyType::ID => "id",
-            PropertyType::MultiSelect => "multi_select",
-            PropertyType::Number => "number",
-            PropertyType::People => "people",
-            PropertyType::PhoneNumber => "phone_number",
-            PropertyType::Relation => "relation",
-            PropertyType::RichText => "rich_text",
-            PropertyType::Select => "select",
-            PropertyType::Status => "status",
-            PropertyType::Timestamp => "timestamp",
-            PropertyType::Verification => "verification",
-            PropertyType::Place => "place",
-            PropertyType::Url => "url",
-            PropertyType::Formula => "formula",
-            PropertyType::Rollup => "rollup",
-            PropertyType::CreatedTime => "created_time",
-            PropertyType::LastEditedTime => "last_edited_time",
-        }
+// TODO: BasicProperty Struct (id, name [, color, ...]) MultiSelect
+impl PropertyValue {
+    pub fn variant_eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
     }
-}
 
-impl TryFrom<&str> for PropertyType {
-    type Error = ClientError;
-
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let property_type = match s {
-            "title" => PropertyType::Title,
-            "date" => PropertyType::Date,
-            "checkbox" => PropertyType::Checkbox,
-            "files" => PropertyType::Files,
-            "id" => PropertyType::ID,
-            "multi_select" => PropertyType::MultiSelect,
-            "number" => PropertyType::Number,
-            "people" => PropertyType::People,
-            "phone_number" => PropertyType::PhoneNumber,
-            "relation" => PropertyType::Relation,
-            "rich_text" => PropertyType::RichText,
-            "select" => PropertyType::Select,
-            "status" => PropertyType::Status,
-            "timestamp" => PropertyType::Timestamp,
-            "verification" => PropertyType::Verification,
-            "place" => PropertyType::Place,
-            "url" => PropertyType::Url,
-            "formula" => PropertyType::Formula,
-            "rollup" => PropertyType::Rollup,
-            "created_time" => PropertyType::CreatedTime,
-            "last_edited_time" => PropertyType::LastEditedTime,
-            _ => return Err(ClientError::ValidationError("Notion Property Type".into())),
-        };
-
-        Ok(property_type)
-    }
-}
-
-// DataSource에서 가져올 땐 property 설명
-// Page에서 가져올 땐 property 값이 들어가있음
-
-// multi select 객체는 select를 array로 감쌈 (color, id, name)
-impl PropertyType {
-    pub fn get_value(&self, v: &Value) -> String {
+    pub fn get_value(&self) -> String {
         match self {
-            PropertyType::Title => v.as_array().unwrap().first().unwrap()["plain_text"]
-                .as_str()
-                .unwrap()
-                .into(),
-            PropertyType::Select => v["name"].as_str().unwrap().into(),
-            PropertyType::MultiSelect => v
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|item| item["name"].as_str().unwrap())
-                .collect::<Vec<&str>>()
-                .join("|"),
-            PropertyType::Date => {
-                let start = v["start"].as_str().unwrap();
-                let end = match v["end"].as_str() {
+            PropertyValue::ID => "id".into(),
+            PropertyValue::Title(s) => s.into(),
+            PropertyValue::Date(s, e) => {
+                let e = match e {
                     Some(end) => "~".to_string() + end,
                     None => "".into(),
                 };
 
-                format!("{}{}", start, end)
+                format!("{}{}", s, e)
             }
-            PropertyType::Checkbox => v.as_bool().unwrap().to_string(),
-            PropertyType::Status => v["name"].as_str().unwrap().into(),
-            _ => {
-                println!("Check Property Type, Value: {:?}, {:?}", self, v);
-                "".to_string()
-            }
+            PropertyValue::Checkbox(v) => v.to_string(),
+            PropertyValue::MultiSelect(values) => values.join("|"),
+            PropertyValue::Select(v) => v.clone(),
+            PropertyValue::Status(v) => v.clone(),
+            PropertyValue::Formula(v) => v.clone(),
+            _ => self.to_string(),
         }
+    }
+}
+
+impl From<&Value> for PropertyValue {
+    fn from(value: &Value) -> Self {
+        let type_str = value.get("type").unwrap().as_str().unwrap();
+        let value = value.get(type_str).unwrap();
+
+        println!("Notion property value: {}", value);
+
+        match type_str {
+            "title" => {
+                let v = value.as_array().unwrap().first().unwrap()["plain_text"]
+                    .as_str()
+                    .unwrap();
+                PropertyValue::Title(v.into())
+            }
+            "date" => {
+                let start = value["start"].as_str().unwrap();
+                let end = match value["end"].as_str() {
+                    Some(end) => Some(end.into()),
+                    None => None,
+                };
+                PropertyValue::Date(start.into(), end)
+            }
+            "checkbox" => PropertyValue::Checkbox(value.as_bool().unwrap()),
+            "files" => PropertyValue::Files,
+            "id" => PropertyValue::ID,
+            "multi_select" => {
+                let v = value
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|item| item["name"].as_str().unwrap().into())
+                    .collect::<Vec<String>>();
+                PropertyValue::MultiSelect(v)
+            }
+            "number" => PropertyValue::Number,
+            "people" => PropertyValue::People,
+            "phone_number" => PropertyValue::PhoneNumber,
+            "relation" => PropertyValue::Relation,
+            "rich_text" => PropertyValue::RichText,
+            "select" => {
+                let v = value["name"].as_str().unwrap();
+                PropertyValue::Select(v.into())
+            }
+            "status" => PropertyValue::Status(value["name"].as_str().unwrap().into()),
+            "timestamp" => PropertyValue::Timestamp,
+            "verification" => PropertyValue::Verification,
+            "place" => PropertyValue::Place,
+            "url" => PropertyValue::Url,
+            "formula" => PropertyValue::Formula(value["string"].as_str().unwrap().into()),
+            "rollup" => PropertyValue::Rollup,
+            "created_time" => PropertyValue::CreatedTime,
+            "last_edited_time" => PropertyValue::LastEditedTime,
+            _ => panic!("Invalid Notion Property Type"),
+        }
+    }
+}
+
+impl ToString for &PropertyValue {
+    fn to_string(&self) -> String {
+        match self {
+            PropertyValue::ID => "id",
+            PropertyValue::Title(_) => "title",
+            PropertyValue::Date(_, _) => "date",
+            PropertyValue::Checkbox(_) => "checkbox",
+            PropertyValue::Files => "files",
+            PropertyValue::MultiSelect(_) => "multi_select",
+            PropertyValue::Number => "number",
+            PropertyValue::People => "people",
+            PropertyValue::PhoneNumber => "phone_number",
+            PropertyValue::Relation => "relation",
+            PropertyValue::RichText => "rich_text",
+            PropertyValue::Select(_) => "select",
+            PropertyValue::Status(_) => "status",
+            PropertyValue::Timestamp => "timestamp",
+            PropertyValue::Verification => "verification",
+            PropertyValue::Place => "place",
+            PropertyValue::Url => "url",
+            PropertyValue::Formula(_) => "formula",
+            PropertyValue::Rollup => "rollup",
+            PropertyValue::CreatedTime => "created_time",
+            PropertyValue::LastEditedTime => "last_edited_time",
+        }
+        .into()
     }
 }

@@ -10,7 +10,10 @@ mod test {
 
         let api = NotionAPI::from_env();
 
-        let result = api.get_data_source("{data_source_id}").await.unwrap();
+        let result = api
+            .get_data_source("28714e4a-5157-80cb-8961-000b4d54c831")
+            .await
+            .unwrap();
 
         println!("{:?}", result);
     }
@@ -23,7 +26,7 @@ mod test {
 
         let result = api
             .query_pages(
-                "{data_source_id}",
+                "28714e4a-5157-80cb-8961-000b4d54c831",
                 vec!["title"],
                 json!({"and": [
                     {
@@ -31,13 +34,13 @@ mod test {
                         "date": {
                             // "equals": "2025-11-07T00:00:00+09:00"
                             // "this_week": {}
-                            "after": "2025-11-11T00:00:00+09:00"
+                            "after": "2025-12-15T00:00:00+09:00"
                         }
                     },
                     {
                         "property": "날짜",
                         "date": {
-                            "before": "2025-11-12T00:00:00+09:00"
+                            "before": "2025-12-16T00:00:00+09:00"
                         }
                     }
                 ]}),

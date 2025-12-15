@@ -3,10 +3,10 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use crate::{
-    data_source::types::DataSourceParent,
+    data_source::types::{DataSourceParent, Property},
     database::types::DatabaseParent,
     page::types::Page,
-    types::{Cover, Icon, Property, Title},
+    types::{Cover, Icon, Property as PageProperty, PropertyValue, Title},
 };
 
 #[derive(Deserialize, Debug)]
@@ -29,6 +29,17 @@ pub struct GetDataSourceResponse {
     last_edited_time: DateTime<Utc>,
 }
 
+impl GetDataSourceResponse {
+    pub fn get_properties(&self) -> Vec<Property> {
+        self.properties
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(_, v)| Property::new(v))
+            .collect::<Vec<Property>>()
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct QueryPageListResponse {
     has_more: bool,
@@ -36,46 +47,44 @@ pub struct QueryPageListResponse {
     results: Vec<Page>,
 }
 
-pub struct PageInfo {
-    id: String,
-    properties: Vec<Property>,
-}
-
-impl PageInfo {
-    pub fn get_id(&self) -> &str {
-        &self.id
-    }
-
-    pub fn get_properties(&self) -> &Vec<Property> {
-        &self.properties
-    }
-}
-
 impl QueryPageListResponse {
-    // TODO: format Page {id, properties}
     pub fn get_pages(&self) -> Vec<PageInfo> {
         self.results
             .iter()
-            .map(|p| PageInfo {
-                id: p.get_id().into(),
-                properties: p.get_properties(),
-            })
+            .map(|p| PageInfo::new(p.get_id(), p.get_properties()))
             .collect::<Vec<PageInfo>>()
     }
 }
 
-// TODO: macro_rules?
-impl GetDataSourceResponse {
-    pub fn get_properties(&self) -> Vec<Property> {
-        self.properties
-            .as_object()
-            .unwrap()
-            .iter()
-            .map(|(_, v)| Property::get_property_from_data_source(v))
-            .collect::<Vec<Property>>()
-    }
+pub struct PageInfo {
+    id: String,
+    properties: Vec<PageProperty>,
 }
 
-pub trait PropertyParser {
-    fn parse_property(&self) -> Vec<Property>;
+impl PageInfo {
+    fn new(id: &str, properties: Vec<PageProperty>) -> Self {
+        Self {
+            id: id.into(),
+            properties,
+        }
+    }
+    pub fn get_id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn get_properties(&self) -> &Vec<PageProperty> {
+        &self.properties
+    }
+
+    // TODO: Vec<> / add find by name
+    pub fn find_property(&self, property_value: &PropertyValue) -> Option<String> {
+        match self
+            .properties
+            .iter()
+            .find(|p| p.get_property_value().variant_eq(&property_value))
+        {
+            Some(p) => Some(p.get_property_value().get_value()),
+            None => None,
+        }
+    }
 }

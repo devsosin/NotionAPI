@@ -29,7 +29,6 @@ pub struct Page {
     last_edited_time: DateTime<Utc>,
 }
 
-// TODO: macro_rules?
 impl Page {
     pub fn get_id(&self) -> &str {
         &self.id
