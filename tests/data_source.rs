@@ -1,32 +1,35 @@
 #[cfg(test)]
 mod test {
+    use std::env;
+
     use dotenv::dotenv;
     use notion::{NotionAPI, data_source::DataSourceClient};
     use serde_json::json;
 
     #[tokio::test]
     async fn test_get_ds() {
-        dotenv();
+        dotenv().ok();
 
         let api = NotionAPI::from_env();
+        let token = env::var("NOTION_KEY").expect("Failed to load env variable: NOTION_KEY");
+        let api = api.authed(&token);
 
-        let result = api
-            .get_data_source("28714e4a-5157-80cb-8961-000b4d54c831")
-            .await
-            .unwrap();
+        let result = api.get_data_source("{data_source_id}").await.unwrap();
 
         println!("{:?}", result);
     }
 
     #[tokio::test]
     async fn test_query() {
-        dotenv();
+        dotenv().ok();
 
         let api = NotionAPI::from_env();
+        let token = env::var("NOTION_KEY").expect("Failed to load env variable: NOTION_KEY");
+        let api = api.authed(&token);
 
         let result = api
             .query_pages(
-                "28714e4a-5157-80cb-8961-000b4d54c831",
+                "{data_source_id}",
                 vec!["title"],
                 json!({"and": [
                     {

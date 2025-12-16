@@ -1,7 +1,7 @@
 use serde_json::Value;
 
 use crate::{
-    NotionAPI,
+    NotionAuthedAPI,
     page::{
         dto::request::{PageCreateBody, PageUpdateBody},
         types::{Page, PageParent},
@@ -26,7 +26,7 @@ pub trait PageClient: Send + Sync {
     ) -> impl Future<Output = ClientResult<NotionResponse<Page>>>;
 }
 
-impl PageClient for NotionAPI {
+impl<'a> PageClient for NotionAuthedAPI<'a> {
     async fn create_page(
         &self,
         parent: (&str, &str),

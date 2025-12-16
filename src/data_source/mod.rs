@@ -1,7 +1,7 @@
 use serde_json::{Value, json};
 
 use crate::{
-    NotionAPI,
+    NotionAuthedAPI,
     data_source::dto::{
         request::{PropertyFilters, QueryBody},
         response::{GetDataSourceResponse, QueryPageListResponse},
@@ -29,7 +29,7 @@ pub trait DataSourceClient: Send + Sync {
     // get_templates
 }
 
-impl DataSourceClient for NotionAPI {
+impl<'a> DataSourceClient for NotionAuthedAPI<'a> {
     async fn get_data_source(
         &self,
         data_source_id: &str,

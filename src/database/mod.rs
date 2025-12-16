@@ -4,7 +4,7 @@ pub mod types;
 use serde_json::{Value, json};
 
 use crate::{
-    NotionAPI,
+    NotionAuthedAPI,
     database::dto::response::GetDatabaseResponse,
     types::{ClientResult, Method, NotionResponse},
 };
@@ -18,7 +18,7 @@ pub trait DatabaseClient: Send + Sync {
     ) -> impl Future<Output = ClientResult<NotionResponse<GetDatabaseResponse>>>;
 }
 
-impl DatabaseClient for NotionAPI {
+impl<'a> DatabaseClient for NotionAuthedAPI<'a> {
     async fn get_database(
         &self,
         database_id: &str,

@@ -1,24 +1,19 @@
 use std::{env, fmt, time::Duration};
 
-use reqwest::{ClientBuilder, header};
+use reqwest::{ClientBuilder, RequestBuilder, header};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    NotionAPI,
+    NotionAPI, NotionAuthedAPI,
     types::{ClientResult, ErrorResponse, Method, NotionResponse},
 };
 
 impl NotionAPI {
     pub fn from_env() -> Self {
-        let token = env::var("NOTION_KEY").expect("Failed to load env variable: NOTION_KEY");
         let version = env::var("NOTION_API_VERSION")
             .expect("Failed to load env variable: NOTION_API_VERSION");
 
         let mut headers = header::HeaderMap::new();
-        headers.insert(
-            header::AUTHORIZATION,
-            format!("Bearer {}", &token).parse().unwrap(),
-        );
         headers.insert(
             header::CONTENT_TYPE,
             header::HeaderValue::from_static("application/json"),
@@ -37,12 +32,11 @@ impl NotionAPI {
         }
     }
 
-    pub async fn send<T: Serialize, U: for<'a> Deserialize<'a> + fmt::Debug>(
-        &self,
-        endpoint: &str,
-        method: Method,
-        body: T,
-    ) -> ClientResult<NotionResponse<U>> {
+    pub fn authed<'a>(&'a self, token: &'a str) -> NotionAuthedAPI<'a> {
+        NotionAuthedAPI { api: self, token }
+    }
+
+    fn build_client(&self, method: Method, endpoint: &str) -> RequestBuilder {
         let url = format!("{}/{}", &self.base_url, endpoint);
 
         let builder = match method {
@@ -52,7 +46,19 @@ impl NotionAPI {
             Method::Delete => self.client.delete(url),
         };
 
-        let res = builder.json(&body).send().await?;
+        builder
+    }
+}
+
+impl<'a> NotionAuthedAPI<'a> {
+    pub async fn send<T: Serialize, U: for<'d> Deserialize<'d> + fmt::Debug>(
+        &self,
+        endpoint: &str,
+        method: Method,
+        body: T,
+    ) -> ClientResult<NotionResponse<U>> {
+        let builder = self.api.build_client(method, endpoint);
+        let res = builder.bearer_auth(self.token).json(&body).send().await?;
 
         if res.status().is_success() == false {
             let err_response = res.json::<ErrorResponse>().await.unwrap();

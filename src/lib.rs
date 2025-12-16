@@ -13,3 +13,8 @@ pub struct NotionAPI {
     client: Client,
     base_url: String,
 }
+
+pub struct NotionAuthedAPI<'a> {
+    api: &'a NotionAPI,
+    token: &'a str,
+}

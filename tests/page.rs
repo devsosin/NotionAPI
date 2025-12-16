@@ -1,14 +1,18 @@
 #[cfg(test)]
 mod test {
+    use std::env;
+
     use dotenv::dotenv;
     use notion::{NotionAPI, page::PageClient};
     use serde_json::json;
 
     #[tokio::test]
     async fn test_update_page() {
-        dotenv();
+        dotenv().ok();
 
         let api = NotionAPI::from_env();
+        let token = env::var("NOTION_KEY").expect("Failed to load env variable: NOTION_KEY");
+        let api = api.authed(&token);
 
         let page_id = "{page_id}";
         let properties = json!({
