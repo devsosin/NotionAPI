@@ -36,7 +36,7 @@ impl NotionAPI {
         NotionAuthedAPI { api: self, token }
     }
 
-    fn build_client(&self, method: Method, endpoint: &str) -> RequestBuilder {
+    fn build_request(&self, method: Method, endpoint: &str) -> RequestBuilder {
         let url = format!("{}/{}", &self.base_url, endpoint);
 
         let builder = match method {
@@ -57,8 +57,13 @@ impl<'a> NotionAuthedAPI<'a> {
         method: Method,
         body: T,
     ) -> ClientResult<NotionResponse<U>> {
-        let builder = self.api.build_client(method, endpoint);
-        let res = builder.bearer_auth(self.token).json(&body).send().await?;
+        let res = self
+            .api
+            .build_request(method, endpoint)
+            .bearer_auth(self.token)
+            .json(&body)
+            .send()
+            .await?;
 
         if res.status().is_success() == false {
             let err_response = res.json::<ErrorResponse>().await.unwrap();
