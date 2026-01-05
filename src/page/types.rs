@@ -66,8 +66,12 @@ impl From<&str> for ParentType {
 pub struct PageParent {
     #[serde(rename(deserialize = "type", serialize = "type"))]
     parent_type: ParentType,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     database_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     data_source_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     page_id: Option<String>,
 }
 
